@@ -1,0 +1,82 @@
+name: 'v2ex-fetch-old-data'
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: "*/5 * * * *"  # 每隔 10 分钟执行一次
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  v2ex-fetch-create-issue:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install WenQuanYi Micro Hei font
+        run: |
+          sudo apt-get update
+          sudo apt-get install fonts-wqy-microhei
+          sudo fc-cache -fv
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - run: npm i
+
+      - name: V2ex fetch post
+        run: node actions/v2ex-fetch-old-data.js
+
+      - name: Get Current Execution Count
+        id: get_exec_count
+        run: |
+          # 检查文件是否存在，如果不存在则初始化为 0
+          if [ -f actions/execution_count.txt ]; then
+            count=$(cat actions/execution_count.txt)
+          else
+            count=0
+          fi
+          echo "Current execution count: $count"
+          echo "EXECUTION_COUNT=$count" >> $GITHUB_ENV  # 设置执行次数到环境变量
+
+      - name: Increment Execution Count
+        id: increment_count
+        run: |
+          new_count=$(( $EXECUTION_COUNT + 1 ))  # 直接使用环境变量
+          echo "New execution count: $new_count"
+          echo $new_count > actions/execution_count.txt  # 更新 actions/execution_count.txt 文件
+
+      - name: Upload image to repository
+        run: |
+          IMAGE_PATH="assets/created-images/*.png"  # 图片路径
+          TARGET_PATH="assets/v2ex/"  # 上传到仓库的目标路径
+
+          mkdir -p $(dirname $TARGET_PATH)
+          cp $IMAGE_PATH $TARGET_PATH
+
+          git config --global user.name "Damao2250"
+          git config --global user.email "damao2250@gmail.com"
+          git add actions/execution_count.txt
+          git add $TARGET_PATH
+          git commit -m "Add v2ex images"
+          git push origin main
+
+      - name: Create github issue
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: github-issue.md
