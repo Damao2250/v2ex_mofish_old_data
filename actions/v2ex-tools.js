@@ -69,11 +69,11 @@ const generateImg = async (data, day = "") => {
   </html>
   `
   let now = day
-    ? day + moment().utcOffset(8).format("HHmmss")
-    : moment().utcOffset(8).format("YYYYMMDDHHmmss")
+    ? day + ' ' + moment().utcOffset(8).format("HHmmss")
+    : moment().utcOffset(8).format("YYYYMMDD HHmmss")
   let temporaryPath = `assets/created-images/${now}-${data.id}_old.png`
   let outputPath = `assets/created-images/${now}-${data.id}.png`
-  let realPath = `https://raw.githubusercontent.com/Damao2250/v2ex_mofish/main/assets/v2ex/${now}-${data.id}.png`
+  let realPath = `https://raw.githubusercontent.com/Damao2250/v2ex_mofish_old_data/main/assets/v2ex/${now}-${data.id}.png`
   await nodeHtmlToImage({
     output: temporaryPath,
     html: newDiv,
